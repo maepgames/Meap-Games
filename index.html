@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="google-site-verification" content="OpgGTyeLX_P5q5M9xdYbsI-HHJgnxV3E603OTi6aOzU" />
   <title>MEAP GAMES</title>
-  <meta name="description" content="MEAP GAMES - Ücretsiz oyunlar, hesap oluştur, giriş yap, oyuncu isminle oyna!">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap');
     body {background:#ff3333; color:white; font-family:Arial; text-align:center; margin:0; padding:20px;}
@@ -29,74 +27,71 @@
   <h2>GİRİŞ YAP</h2>
 
   <div class="input-group"><input type="email" id="email" placeholder="E-posta" required></div>
-  <div class="input-group"><input type="password" id="pass" placeholder="Şifre" required>
-    <span class="eye" onclick="toggleEye(this)">Göz</span>
-  </div>
+  <div class="input-group"><input type="password" id="pass" placeholder="Şifre" required><span class="eye" onclick="toggleEye(this)">👁️</span></div>
 
   <button onclick="girisYap()">GİRİŞ YAP</button>
 
   <p id="hosgeldin"></p>
   <p><a href="kayit.html">Hesap oluştur →</a></p>
 
-  <div id="adminPanel">YÖNETİCİ PANELİ</div>
+  <div id="adminPanel">⚡ YÖNETİCİ PANELİ ⚡</div>
 
-<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDp2dofx_F9_p7PVaXxCjW9wY8e8vF6n5m3k1h0g",
-    authDomain: "meap-games.firebaseapp.com",
-    projectId: "meap-games",
-    storageBucket: "meap-games.appspot.com",
-    messagingSenderId: "1092303341508",
-    appId: "1:1092303341508:web:4f6412d44da060c669c691"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDp2dofx_F9_p7PVaXxCjWlhxLwcRtF19o",
+      authDomain: "meap-games.firebaseapp.com",
+      databaseURL: "https://meap-games-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "meap-games",
+      storageBucket: "meap-games.firebasestorage.app",
+      messagingSenderId: "1092303341508",
+      appId: "1:1092303341508:web:4f6412d44da060c669c691"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
-  function toggleEye(e) {
-    const input = e.previousElementSibling;
-    if (input.type === "password") { input.type = "text"; e.textContent = "Gizle"; }
-    else { input.type = "password"; e.textContent = "Göz"; }
-  }
+    function toggleEye(e) {
+      const input = e.previousElementSibling;
+      if (input.type === "password") { input.type = "text"; e.textContent = "🙈"; }
+      else { input.type = "password"; e.textContent = "👁️"; }
+    }
 
-  function girisYap() {
-    const email = document.getElementById("email").value.trim();
-    const pass = document.getElementById("pass").value;
-    if (!email || !pass) return alert("E-posta ve şifre gir!");
+    function girisYap() {
+      const email = document.getElementById("email").value.trim();
+      const pass = document.getElementById("pass").value;
+      if (!email || !pass) { alert("E-posta ve şifre gir!"); return; }
 
-    auth.signInWithEmailAndPassword(email, pass)
-      .then((userCredential) => {
-        const user = userCredential.user;
+      auth.signInWithEmailAndPassword(email, pass)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          const isim = user.displayName || "Oyuncu";
+          document.getElementById("hosgeldin").style.display = "block";
+          document.getElementById("hosgeldin").innerHTML = "Hoş geldin <b>" + isim + "</b>!";
+          if (email === "maskral2525@gmail.com" && pass === "mertali2013") {
+            document.getElementById("adminPanel").style.display = "block";
+          }
+        })
+        .catch((error) => {
+          let msg = "";
+          if (error.code === "auth/user-not-found") msg = "Bu e-posta kayıtlı değil!";
+          else if (error.code === "auth/wrong-password") msg = "Şifre yanlış!";
+          else if (error.code === "auth/invalid-email") msg = "Geçersiz e-posta!";
+          else msg = error.message;
+          alert("HATA: " + msg);
+        });
+    }
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
         const isim = user.displayName || "Oyuncu";
         document.getElementById("hosgeldin").style.display = "block";
         document.getElementById("hosgeldin").innerHTML = "Hoş geldin <b>" + isim + "</b>!";
-        
-        if (email === "maskral2525@gmail.com" && pass === "mertali2013") {
+        if (user.email === "maskral2525@gmail.com") {
           document.getElementById("adminPanel").style.display = "block";
         }
-      })
-      .catch((error) => {
-        let msg = "";
-        if (error.code === "auth/user-not-found") msg = "Bu e-posta kayıtlı değil!";
-        else if (error.code === "auth/wrong-password") msg = "Şifre yanlış!";
-        else if (error.code === "auth/invalid-email") msg = "Geçersiz e-posta!";
-        else msg = error.message;
-        alert("HATA: " + msg);
-      });
-  }
-
-  // Sayfa açılınca kontrol
-  auth.onAuthStateChanged((user) => {
-    if (user) {
-      const isim = user.displayName || "Oyuncu";
-      document.getElementById("hosgeldin").style.display = "block";
-      document.getElementById("hosgeldin").innerHTML = "Hoş geldin <b>" + isim + "</b>!";
-      if (user.email === "maskral2525@gmail.com") {
-        document.getElementById("adminPanel").style.display = "block";
       }
-    }
-  });
-</script>
+    });
+  </script>
 </body>
 </html>
