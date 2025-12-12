@@ -2,126 +2,41 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport"viewport" content="width=device-width, initial-scale=1.0">
   <title>MEAP GAMES - Mini Oyunlar</title>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {apiKey: "AIzaSyDp2dofx_F9_p7PVaxXcjWlhxLwcRtF19o",authDomain: "meap-games.firebaseapp.com",projectId: "meap-games",databaseURL: "https://meap-games-default-rtdb.europe-west1.firebasedatabase.app",appId: "1:1092303341508:web:9a25309386ec575569c691"};
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+  </script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box;}
     body{background:#000;color:white;font-family:Arial,sans-serif;}
     .topbar{position:fixed;top:0;left:0;right:0;background:#111;padding:15px;display:flex;justify-content:center;gap:30px;z-index:99;box-shadow:0 4px 20px rgba(255,0,0,0.5);}
     .topbar a{color:white;text-decoration:none;font-size:18px;font-weight:bold;padding:10px 20px;border-radius:8px;}
     .topbar a:hover,.topbar a.active{background:#ff3333;}
+    .topbar a:last-child{background:#c00;}
     .main{margin-top:80px;padding:20px;text-align:center;}
     h1{font-size:50px;margin:40px 0;text-shadow:0 0 20px #ff3333;}
-    .cards{display:flex;flex-wrap:wrap;justify-content:center;gap:25px;}
-    .card{background:#111;width:300px;border-radius:15px;overflow:hidden;box-shadow:0 5px 20px rgba(255,0,0,0.4);}
-    .card img{width:100%;height:180px;object-fit:cover;}
-    .card h3{padding:15px;font-size:22px;}
-    .card p{padding:0 15px 20px;color:#aaa;}
-    .download-btn{background:#ff3333;color:white;padding:12px;margin:10px 15px 20px;border:none;border-radius:8px;font-size:18px;cursor:pointer;}
-    #adminPanel{display:none;margin:40px auto;padding:20px;background:#111;border:2px solid #ff3333;border-radius:15px;max-width:500px;}
-    #adminPanel input,#adminPanel button{margin:10px;width:90%;padding:12px;font-size:16px;border-radius:8px;}
-    #adminPanel button{background:#ff3333;color:white;border:none;cursor:pointer;}
   </style>
 </head>
 <body>
-
   <div class="topbar">
-  <a href="home.html">OYUNLAR</a>
-  <a href="mini-oyunlar.html" class="active">MİNİ OYUNLAR</a>
-  <a href="#">DUYURULAR</a>
-  <a href="#">HESAP</a>
-  <a href="#" onclick="cikisYap()" style="background:#900;color:white;">ÇIKIŞ YAP</a>
+    <a href="home.html">OYUNLAR</a>
+    <a href="mini-oyunlar.html" class="active">MİNİ OYUNLAR</a>
+    <a href="#">DUYURULAR</a>
+    <a href="#">HESAP</a>
+    <a href="#" onclick="firebase.auth().signOut();setTimeout(()=>location.href='index.html',500)">ÇIKIŞ YAP</a>
   </div>
 
   <div class="main">
     <h1>MİNİ OYUNLAR</h1>
-
-    <!-- SADECE ADMİN GÖRÜR -->
-    <div id="adminPanel">
-      <h2 style="color:#ff3333">MİNİ OYUN EKLE (ADMİN)</h2>
-      <input type="text" id="oyunAdi" placeholder="Mini oyun adı">
-      <input type="text" id="oyunBoyut" placeholder="Boyut (örnek: 5 MB)">
-      <input type="text" id="oyunResim" placeholder="Resim linki">
-      <input type="text" id="oyunLink" placeholder="İndirme linki">
-      <button onclick="miniOyunEkle()">MİNİ OYUN EKLE</button>
-    </div>
-
-    <div class="cards" id="miniOyunListesi">
-      <!-- MİNİ OYUNLAR BURAYA GELECEK -->
-    </div>
   </div>
 
   <script>
-    const firebaseConfig = { /* aynı config */
-      apiKey: "AIzaSyDp2dofx_F9_p7PVaxXcjWlhxLwcRtF19o",
-      authDomain: "meap-games.firebaseapp.com",
-      projectId: "meap-games",
-      databaseURL: "https://meap-games-default-rtdb.europe-west1.firebasedatabase.app",
-      appId: "1:1092303341508:web:9a25309386ec575569c691"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    // Admin kontrol
-    auth.onAuthStateChanged((user) => {
-      if (user && user.email === "maskral2525@gmail.com") {
-        document.getElementById("adminPanel").style.display = "block";
-      }
-      miniOyunlariGetir();
-    });
-
-    // Mini oyun ekle
-    function miniOyunEkle() {
-      const adi = document.getElementById("oyunAdi").value;
-      const boyut = document.getElementById("oyunBoyut").value;
-      const resim = document.getElementById("oyunResim").value;
-      const link = document.getElementById("oyunLink").value;
-
-      if (!adi || !boyut || !resim || !link) { alert("Tüm alanları doldur!"); return; }
-
-      db.collection("miniOyunlar").add({
-        adi, boyut, resim, link, tarih: new Date()
-      }).then(() => {
-        alert("Mini oyun eklendi!");
-        document.getElementById("oyunAdi").value = "";
-        document.getElementById("oyunBoyut").value = "";
-        document.getElementById("oyunResim").value = "";
-        document.getElementById("oyunLink").value = "";
-        miniOyunlariGetir();
-      });
-    }
-
-    // Mini oyunları listele
-    function miniOyunlariGetir() {
-      const liste = document.getElementById("miniOyunListesi");
-      liste.innerHTML = "<p>Yükleniyor...</p>";
-
-      db.collection("miniOyunlar").orderBy("tarih", "desc").get().then((snapshot) => {
-        liste.innerHTML = "";
-        snapshot.forEach((doc) => {
-          const o = doc.data();
-          liste.innerHTML += `
-            <div class="card">
-              <img src="\( {o.resim}" alt=" \){o.adi}">
-              <h3>${o.adi}</h3>
-              <p>${o.boyut}</p>
-              <button class="download-btn" onclick="window.open('${o.link}')">İNDİR</button>
-            </div>`;
-        });
-        if (snapshot.empty) liste.innerHTML = "<p>Henüz mini oyun yok.</p>";
-      });
-    }
-  </script>
-  <script>
-  firebase.auth().onAuthStateChanged((user) => {
-    if (user && window.location.pathname.includes("index.html")) {
-      window.location.href = "home.html";
-    }
-  });
+    auth.onAuthStateChanged(user => { if (!user) location.href = "index.html"; });
   </script>
 </body>
 </html>
