@@ -70,7 +70,10 @@
           document.getElementById("hosgeldin").innerHTML = "Hoş geldin <b>" + isim + "</b>!";
           if (email === "maskral2525@gmail.com" && pass === "mertali2013") {
             document.getElementById("adminPanel").style.display = "block";
-          }
+          // ANA SAYFAYA YÖNLENDİR
+  setTimeout(() => {
+    window.location.href = "home.html";
+  }, 1500); // 1.5 saniye bekle, hoş geldin yazısı gözüksün
         })
         .catch((error) => {
           let msg = "";
