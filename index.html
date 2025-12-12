@@ -34,7 +34,7 @@
   <p id="hosgeldin"></p>
   <p><a href="kayit.html">Hesap oluştur →</a></p>
 
-  <div id="adminPanel">⚡ YÖNETİCİ PANELİ ⚡</div>
+  <div id="adminPanel">YÖNETİCİ PANELİ</div>
 
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
@@ -63,33 +63,27 @@
       if (!email || !pass) { alert("E-posta ve şifre gir!"); return; }
 
       auth.signInWithEmailAndPassword(email, pass)
-        .then((userCredential) => {
-          const user = userCredential.user;
-          const isim = user.displayName || "Oyuncu";
-          document.getElementById("hosgeldin").style.display = "block";
-          document.getElementById("hosgeldin").innerHTML = "Hoş geldin <b>" + isim + "</b>!";
-          if (email === "maskral2525@gmail.com" && pass === "mertali2013") {
-            document.getElementById("adminPanel").style.display = "block";
-          }
+        .then(() => {
+          // GİRİŞ BAŞARILI → 1.5 SN SONRA ANA SAYFAYA GİT
+          setTimeout(() => { window.location.href = "home.html"; }, 1500);
         })
         .catch((error) => {
-          let msg = "";
-          if (error.code === "auth/user-not-found") msg = "Bu e-posta kayıtlı değil!";
-          else if (error.code === "auth/wrong-password") msg = "Şifre yanlış!";
-          else if (error.code === "auth/invalid-email") msg = "Geçersiz e-posta!";
-          else msg = error.message;
-          alert("HATA: " + msg);
+          if (error.code === "auth/user-not-found") {
+            auth.createUserWithEmailAndPassword(email, pass)
+              .then(() => {
+                setTimeout(() => { window.location.href = "home.html"; }, 1500);
+              })
+              .catch((err) => alert("HATA: " + err.message));
+          } else {
+            alert("HATA: " + error.message);
+          }
         });
     }
 
+    // ZATEN GİRİŞ YAPMIŞSA DOĞRUDAN ANA SAYFAYA GÖTÜR
     auth.onAuthStateChanged((user) => {
       if (user) {
-        const isim = user.displayName || "Oyuncu";
-        document.getElementById("hosgeldin").style.display = "block";
-        document.getElementById("hosgeldin").innerHTML = "Hoş geldin <b>" + isim + "</b>!";
-        if (user.email === "maskral2525@gmail.com") {
-          document.getElementById("adminPanel").style.display = "block";
-        }
+        window.location.href = "home.html";
       }
     });
   </script>
