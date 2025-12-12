@@ -8,7 +8,13 @@
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
   <script>
-    const firebaseConfig = {apiKey: "AIzaSyDp2dofx_F9_p7PVaxXcjWlhxLwcRtF19o",authDomain: "meap-games.firebaseapp.com",projectId: "meap-games",databaseURL: "https://meap-games-default-rtdb.europe-west1.firebasedatabase.app",appId: "1:1092303341508:web:9a25309386ec575569c691"};
+    const firebaseConfig = {
+      apiKey: "AIzaSyDp2dofx_F9_p7PVaxXcjWlhxLwcRtF19o",
+      authDomain: "meap-games.firebaseapp.com",
+      projectId: "meap-games",
+      databaseURL: "https://meap-games-default-rtdb.europe-west1.firebasedatabase.app",
+      appId: "1:1092303341508:web:9a25309386ec575569c691"
+    };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -17,9 +23,9 @@
     *{margin:0;padding:0;box-sizing:border-box;}
     body{background:#000;color:white;font-family:Arial,sans-serif;}
     .topbar{position:fixed;top:0;left:0;right:0;background:#111;padding:15px;display:flex;justify-content:center;gap:30px;z-index:99;box-shadow:0 4px 20px rgba(255,0,0,0.5);}
-    .topbar a{color:white;text-decoration:none;font-size:18px;font-weight:bold;padding:10px 20px;border-radius:8px;}
+    .topbar a{color:white;text-decoration:none;font-size:18px;font-weight:bold;padding:10px 20px;border-radius:8px;transition:0.3s;}
     .topbar a:hover,.topbar a.active{background:#ff3333;}
-    .topbar a:last-child{background:#c00;}
+    .topbar a:last-child{background:#c00;color:white;}
     .main{margin-top:80px;padding:20px;text-align:center;}
     h1{font-size:50px;margin:40px 0;text-shadow:0 0 20px #ff3333;}
     .cards{display:flex;flex-wrap:wrap;justify-content:center;gap:25px;margin-top:30px;}
@@ -41,13 +47,12 @@
     <a href="mini-oyunlar.html">MİNİ OYUNLAR</a>
     <a href="#">DUYURULAR</a>
     <a href="#">HESAP</a>
-    <a href="#" onclick="firebase.auth().signOut();setTimeout(()=>location.href='index.html',500)">ÇIKIŞ YAP</a>
+    <a href="#" onclick="cikisYap()">ÇIKIŞ YAP</a>
   </div>
 
   <div class="main">
     <h1>MEAP GAMES</h1>
 
-    <!-- SADECE SEN GÖRÜRSÜN -->
     <div id="adminPanel">
       <h2 style="color:#ff3333;margin-bottom:20px">OYUN EKLE (ADMİN)</h2>
       <input type="text" id="oyunAdi" placeholder="Oyun adı">
@@ -58,20 +63,28 @@
     </div>
 
     <div class="cards" id="oyunListesi">
-      <!-- Oyunlar otomatik buraya gelecek -->
+      Yükleniyor...
     </div>
   </div>
 
   <script>
-    // Admin paneli sadece senin hesabınla göster
     auth.onAuthStateChanged(user => {
+      if (!user) location.href = "index.html";
       if (user && user.email === "maskral2525@gmail.com") {
         document.getElementById("adminPanel").style.display = "block";
       }
       oyunlariGetir();
     });
 
-    // Oyun ekle
+    function cikisYap() {
+      auth.signOut().then(() => {
+        location.href = "index.html";
+      }).catch(error => {
+        console.log("Çıkış hatası:", error);
+        location.href = "index.html"; // Hata olsa bile at
+      });
+    }
+
     function oyunEkle() {
       const adi = document.getElementById("oyunAdi").value.trim();
       const boyut = document.getElementById("oyunBoyut").value.trim();
@@ -86,15 +99,15 @@
       db.collection("oyunlar").add({
         adi, boyut, resim, link, tarih: new Date()
       }).then(() => {
-        alert("OyunEklendi();
+        alert("Oyun eklendi!");
         document.getElementById("oyunAdi").value = "";
         document.getElementById("oyunBoyut").value = "";
         document.getElementById("oyunResim").value = "";
         document.getElementById("oyunLink").value = "";
-      });
+        oyunlariGetir();
+      }).catch(error => alert("Hata: " + error.message));
     }
 
-    // Oyunları listele
     function oyunlariGetir() {
       const liste = document.getElementById("oyunListesi");
       liste.innerHTML = "<p style='color:#aaa'>Yükleniyor...</p>";
@@ -112,13 +125,10 @@
             </div>`;
         });
         if (snapshot.empty) liste.innerHTML = "<p style='color:#aaa'>Henüz oyun eklenmemiş.</p>";
+      }).catch(error => {
+        liste.innerHTML = "<p style='color:#aaa'>Hata: " + error.message + "</p>";
       });
     }
-
-    // Giriş yapılmadıysa giriş ekranına at
-    auth.onAuthStateChanged(user => {
-      if (!user) location.href = "index.html";
-    });
   </script>
 </body>
 </html>
