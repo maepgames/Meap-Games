@@ -1,100 +1,46 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MEAP GAMES</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap');
-    body {background:#ff3333; color:white; font-family:Arial; text-align:center; margin:0; padding:20px;}
-    .logo {margin-top:30px; font-family:'Orbitron',sans-serif; font-size:70px; letter-spacing:8px; text-shadow:0 0 20px rgba(255,255,255,0.8);}
-    .logo span {display:block; font-size:90px;}
-    .underline {width:400px; height:6px; background:white; margin:20px auto; box-shadow:0 0 15px white;}
-    h2 {margin:50px 0 30px; font-size:32px;}
-    .input-group {position:relative; width:90%; max-width:350px; margin:15px auto;}
-    input {padding:15px 50px 15px 15px; width:100%; border:none; border-radius:8px; background:rgba(255,255,255,0.2); color:white; font-size:18px; box-sizing:border-box;}
-    input::placeholder {color:#ffcccc;}
-    .eye {position:absolute; right:15px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:24px;}
-    button {padding:15px; width:90%; max-width:350px; background:white; color:#ff3333; font-weight:bold; border:none; border-radius:8px; font-size:20px; cursor:pointer; margin:20px auto;}
-    button:hover {background:#ff6666; color:white;}
-    #adminPanel {margin-top:60px; font-size:40px; display:none; color:yellow; text-shadow:0 0 20px gold;}
-    #hosgeldin {margin-top:30px; font-size:24px; font-weight:bold; color:lime; display:none;}
-    a {color:white; text-decoration:underline; font-size:18px;}
-  </style>
-</head>
-<body>
-  <div class="logo">MEAP<div class="underline"></div><span>GAMES</span><div class="underline"></div></div>
-  <h2>GİRİŞ YAP</h2>
+function girisYap() {
+  const email = document.getElementById("email").value.trim();
+  const pass = document.getElementById("pass").value;
 
-  <div class="input-group"><input type="email" id="email" placeholder="E-posta" required></div>
-  <div class="input-group"><input type="password" id="pass" placeholder="Şifre" required><span class="eye" onclick="toggleEye(this)">👁️</span></div>
+  if (!email || !pass) {
+    alert("E-posta ve şifre doldur lan!");
+    return;
+  }
 
-  <button onclick="girisYap()">GİRİŞ YAP</button>
+  // GİRİŞ DENEMESİ
+  auth.signInWithEmailAndPassword(email, pass)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      const isim = user.displayName || "Oyuncu";
 
-  <p id="hosgeldin"></p>
-  <p><a href="kayit.html">Hesap oluştur →</a></p>
+      document.getElementById("hosgeldin").style.display = "block";
+      document.getElementById("hosgeldin").innerHTML = "Hoş geldin <b>" + isim + "</b>!";
 
-  <div id="adminPanel">⚡ YÖNETİCİ PANELİ ⚡</div>
-
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDp2dofx_F9_p7PVaxXcjWlhxLwcRtF19o",
-      authDomain: "meap-games.firebaseapp.com",
-      databaseURL: "https://meap-games-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "meap-games",
-      storageBucket: "meap-games.firebasestorage.app",
-      messagingSenderId: "1092303341508",
-      appId: "1:1092303341508:web:9a25309386ec575569c691"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-
-    function toggleEye(e) {
-      const input = e.previousElementSibling;
-      if (input.type === "password") { input.type = "text"; e.textContent = "🙈"; }
-      else { input.type = "password"; e.textContent = "👁️"; }
-    }
-
-    function girisYap() {
-      const email = document.getElementById("email").value.trim();
-      const pass = document.getElementById("pass").value;
-      if (!email || !pass) { alert("E-posta ve şifre gir!"); return; }
-
-      auth.signInWithEmailAndPassword(email, pass)
+      // 1.5 saniye bekle sonra ana sayfaya git
+      setTimeout(() => {
+        window.location.href = "home.html";
+      }, 1500);
+    })
+    .catch((error) => {
+      // YOKSA KAYIT OL
+      auth.createUserWithEmailAndPassword(email, pass)
         .then((userCredential) => {
           const user = userCredential.user;
-          const isim = user.displayName || "Oyuncu";
           document.getElementById("hosgeldin").style.display = "block";
-          document.getElementById("hosgeldin").innerHTML = "Hoş geldin <b>" + isim + "</b>!";
-          if (email === "maskral2525@gmail.com" && pass === "mertali2013") {
-            document.getElementById("adminPanel").style.display = "block";
-          // ANA SAYFAYA YÖNLENDİR
-  setTimeout(() => {
-    window.location.href = "home.html";
-  }, 1500); // 1.5 saniye bekle, hoş geldin yazısı gözüksün
+          document.getElementById("hosgeldin").innerHTML = "Hoş geldin <b>" + email.split('@')[0] + "</b>!";
+
+          setTimeout(() => {
+            window.location.href = "home.html";
+          }, 1500);
         })
         .catch((error) => {
           let msg = "";
-          if (error.code === "auth/user-not-found") msg = "Bu e-posta kayıtlı değil!";
-          else if (error.code === "auth/wrong-password") msg = "Şifre yanlış!";
+          if (error.code === "auth/weak-password") msg = "Şifre en az 6 karakter olmalı!";
+          else if (error.code === "auth/email-already-in-use") msg = "Bu e-posta zaten kayıtlı!";
           else if (error.code === "auth/invalid-email") msg = "Geçersiz e-posta!";
           else msg = error.message;
+
           alert("HATA: " + msg);
         });
-    }
-
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        const isim = user.displayName || "Oyuncu";
-        document.getElementById("hosgeldin").style.display = "block";
-        document.getElementById("hosgeldin").innerHTML = "Hoş geldin <b>" + isim + "</b>!";
-        if (user.email === "maskral2525@gmail.com") {
-          document.getElementById("adminPanel").style.display = "block";
-        }
-      }
     });
-  </script>
-</body>
-</html>
+}
