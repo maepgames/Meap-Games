@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
@@ -22,14 +22,20 @@
     .topbar a:last-child{background:#c00;}
     .main{margin-top:80px;padding:20px;text-align:center;}
     h1{font-size:50px;margin:40px 0;text-shadow:0 0 20px #ff3333;}
-    .cards{display:flex;flex-wrap:wrap;justify-content:center;gap:25px;}
-    .card{background:#111;width:300px;border-radius:15px;overflow:hidden;box-shadow:0 5px 20px rgba(255,0,0,0.4);}
+    .cards{display:flex;flex-wrap:wrap;justify-content:center;gap:25px;margin-top:30px;}
+    .card{background:#111;width:300px;border-radius:15px;overflow:hidden;box-shadow:0 5px 20px rgba(255,0,0,0.4);transition:0.3s;}
+    .card:hover{transform:translateY(-10px);}
     .card img{width:100%;height:180px;object-fit:cover;}
-    .card h3,.card p{padding:15px;}
-    .download-btn{background:#ff3333;color:white;padding:12px;border:none;border-radius:8px;font-size:18px;cursor:pointer;}
+    .card h3{padding:15px;font-size:22px;}
+    .card p{padding:0 15px 20px;color:#aaa;}
+    .download-btn{background:#ff3333;color:white;padding:12px;margin:10px 15px 20px;border:none;border-radius:8px;font-size:18px;cursor:pointer;}
+    #adminPanel{display:none;margin:50px auto;padding:25px;background:#111;border:2px solid #ff3333;border-radius:15px;max-width:500px;}
+    #adminPanel input,#adminPanel button{margin:10px;width:90%;padding:12px;font-size:16px;border-radius:8px;}
+    #adminPanel button{background:#ff3333;color:white;border:none;cursor:pointer;}
   </style>
 </head>
 <body>
+
   <div class="topbar">
     <a href="home.html" class="active">OYUNLAR</a>
     <a href="mini-oyunlar.html">MİNİ OYUNLAR</a>
@@ -40,11 +46,79 @@
 
   <div class="main">
     <h1>MEAP GAMES</h1>
-    <div class="cards" id="oyunListesi"></div>
+
+    <!-- SADECE SEN GÖRÜRSÜN -->
+    <div id="adminPanel">
+      <h2 style="color:#ff3333;margin-bottom:20px">OYUN EKLE (ADMİN)</h2>
+      <input type="text" id="oyunAdi" placeholder="Oyun adı">
+      <input type="text" id="oyunBoyut" placeholder="Boyut (45 MB)">
+      <input type="text" id="oyunResim" placeholder="Resim linki">
+      <input type="text" id="oyunLink" placeholder="İndirme linki">
+      <button onclick="oyunEkle()">OYUN EKLE</button>
+    </div>
+
+    <div class="cards" id="oyunListesi">
+      <!-- Oyunlar otomatik buraya gelecek -->
+    </div>
   </div>
 
   <script>
-    auth.onAuthStateChanged(user => { if (!user) location.href = "index.html"; });
+    // Admin paneli sadece senin hesabınla göster
+    auth.onAuthStateChanged(user => {
+      if (user && user.email === "maskral2525@gmail.com") {
+        document.getElementById("adminPanel").style.display = "block";
+      }
+      oyunlariGetir();
+    });
+
+    // Oyun ekle
+    function oyunEkle() {
+      const adi = document.getElementById("oyunAdi").value.trim();
+      const boyut = document.getElementById("oyunBoyut").value.trim();
+      const resim = document.getElementById("oyunResim").value.trim();
+      const link = document.getElementById("oyunLink").value.trim();
+
+      if (!adi || !boyut || !resim || !link) {
+        alert("Tüm alanları doldur!");
+        return;
+      }
+
+      db.collection("oyunlar").add({
+        adi, boyut, resim, link, tarih: new Date()
+      }).then(() => {
+        alert("OyunEklendi();
+        document.getElementById("oyunAdi").value = "";
+        document.getElementById("oyunBoyut").value = "";
+        document.getElementById("oyunResim").value = "";
+        document.getElementById("oyunLink").value = "";
+      });
+    }
+
+    // Oyunları listele
+    function oyunlariGetir() {
+      const liste = document.getElementById("oyunListesi");
+      liste.innerHTML = "<p style='color:#aaa'>Yükleniyor...</p>";
+
+      db.collection("oyunlar").orderBy("tarih", "desc").get().then(snapshot => {
+        liste.innerHTML = "";
+        snapshot.forEach(doc => {
+          const o = doc.data();
+          liste.innerHTML += `
+            <div class="card">
+              <img src="\( {o.resim}" alt=" \){o.adi}">
+              <h3>${o.adi}</h3>
+              <p>${o.boyut}</p>
+              <button class="download-btn" onclick="window.open('${o.link}')">İNDİR</button>
+            </div>`;
+        });
+        if (snapshot.empty) liste.innerHTML = "<p style='color:#aaa'>Henüz oyun eklenmemiş.</p>";
+      });
+    }
+
+    // Giriş yapılmadıysa giriş ekranına at
+    auth.onAuthStateChanged(user => {
+      if (!user) location.href = "index.html";
+    });
   </script>
 </body>
 </html>
