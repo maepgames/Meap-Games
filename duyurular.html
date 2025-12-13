@@ -20,7 +20,6 @@
     const db = firebase.database();
   </script>
   <style>
-    /* aynı stil, kopyala yapıştır */
     *{margin:0;padding:0;box-sizing:border-box;}
     body{background:#000;color:white;font-family:Arial,sans-serif;}
     .topbar{position:fixed;top:0;left:0;right:0;background:#111;padding:15px;display:flex;justify-content:center;gap:30px;z-index:99;box-shadow:0 4px 20px rgba(255,0,0,0.5);}
@@ -117,7 +116,7 @@
       const yorum = document.getElementById(`yorum-${duyuruId}`).value.trim();
       if (!yorum) return;
 
-      db.ref("duyurular/" + duyuruId + "/yorumlar").push().set({
+      db.ref(`duyurular/${duyuruId}/yorumlar`).push().set({
         yorum,
         yazar: currentUser.email.split('@')[0],
         tarih: Date.now()
@@ -129,7 +128,9 @@
     function yorumSil(duyuruId, yorumId) {
       if (currentUser.email !== adminEmail) return;
       if (confirm("Yorumu sil?")) {
-        db.ref("duyurular/" + duyuruId + "/yorumlar/" + yorumId).remove();
+        db.ref(`duyurular/\( {duyuruId}/yorumlar/ \){yorumId}`).remove().then(() => {
+          alert("Yorum silindi!");
+        });
       }
     }
 
@@ -137,7 +138,7 @@
       const liste = document.getElementById("duyurularListesi");
       liste.innerHTML = "<p style='color:#aaa'>Duyurular yükleniyor...</p>";
 
-      duyurularRef.orderByChild("tarih").once("value").then(snapshot => {
+      duyurularRef.orderByChild("tarih").on("value", snapshot => {
         liste.innerHTML = "";
         if (!snapshot.exists()) {
           liste.innerHTML = "<p style='color:#aaa'>Henüz duyuru yok.</p>";
@@ -160,32 +161,32 @@
 
               <div class="yorumlar">`;
 
-          const yorumlarRef = db.ref("duyurular/" + duyuruId + "/yorumlar");
-          yorumlarRef.orderByChild("tarih").once("value").then(ysnap => {
+          const yorumlarRef = db.ref(`duyurular/${duyuruId}/yorumlar`);
+          yorumlarRef.orderByChild("tarih").on("value", ysnap => {
+            let yorumHtml = "";
             if (!ysnap.exists()) {
-              html += "<p style='color:#888;margin-top:10px'>Henüz yorum yok.</p>";
+              yorumHtml = "<p style='color:#888;margin-top:10px'>Henüz yorum yok.</p>";
             }
             ysnap.forEach(ydoc => {
               const y = ydoc.val();
               const yorumId = ydoc.key;
-              html += `
+              yorumHtml += `
                 <div class="yorum">
                   <strong>\( {y.yazar}:</strong> \){y.yorum}
                   <small>${new Date(y.tarih).toLocaleString('tr-TR')}</small>`;
               if (currentUser && currentUser.email === adminEmail) {
-                html += ` <button class="sil-btn" onclick="yorumSil('\( {duyuruId}', ' \){yorumId}')">SİL</button>`;
+                yorumHtml += ` <button class="sil-btn" onclick="yorumSil('\( {duyuruId}', ' \){yorumId}')">SİL</button>`;
               }
-              html += `</div>`;
+              yorumHtml += `</div>`;
             });
-            html += `</div></div>`;
-            liste.innerHTML += html;
+            document.querySelector(`#duyurularListesi .duyuru:last-child .yorumlar`).innerHTML = yorumHtml;
           });
+
+          html += `</div></div>`;
+          liste.innerHTML += html;
         });
       });
     }
-
-    // Realtime güncelleme için listener ekle
-    duyurularRef.on("value", () => duyurulariGetir());
   </script>
 </body>
 </html>
