@@ -121,7 +121,7 @@
       }).then(() => {
         document.getElementById(`yorum-${duyuruId}`).value = "";
         duyurulariGetir();
-      });
+      }).catch(err => alert("Yorum hatası: " + err.message));
     }
 
     function yorumSil(duyuruId, yorumId) {
@@ -129,22 +129,23 @@
       if (confirm("Yorumu sil?")) {
         db.collection("duyurular").doc(duyuruId).collection("yorumlar").doc(yorumId).delete().then(() => {
           duyurulariGetir();
-        });
+        }).catch(err => alert("Silme hatası: " + err.message));
       }
     }
 
-    function duyurulariGetir() {
+    async function duyurulariGetir() {
       const liste = document.getElementById("duyurularListesi");
       liste.innerHTML = "<p style='color:#aaa'>Duyurular yükleniyor...</p>";
 
-      db.collection("duyurular").orderBy("tarih", "desc").get().then(snapshot => {
+      try {
+        const snapshot = await db.collection("duyurular").orderBy("tarih", "desc").get();
         liste.innerHTML = "";
         if (snapshot.empty) {
           liste.innerHTML = "<p style='color:#aaa'>Henüz duyuru yok.</p>";
           return;
         }
 
-        snapshot.forEach(doc => {
+        for (const doc of snapshot.docs) {
           const d = doc.data();
           let html = `
             <div class="duyuru">
@@ -159,30 +160,28 @@
 
               <div class="yorumlar">`;
 
-          db.collection("duyurular").doc(doc.id).collection("yorumlar").orderBy("tarih", "desc").get().then(ysnap => {
-            if (ysnap.empty) {
-              html += "<p style='color:#888;margin-top:10px'>Henüz yorum yok.</p>";
+          const ysnapshot = await db.collection("duyurular").doc(doc.id).collection("yorumlar").orderBy("tarih", "desc").get();
+          if (ysnapshot.empty) {
+            html += "<p style='color:#888;margin-top:10px'>Henüz yorum yok.</p>";
+          }
+          ysnapshot.forEach(ydoc => {
+            const y = ydoc.data();
+            html += `
+              <div class="yorum">
+                <strong>\( {y.yazar}:</strong> \){y.yorum}
+                <small>${new Date(y.tarih.toDate()).toLocaleString('tr-TR')}</small>`;
+            if (currentUser && currentUser.email === adminEmail) {
+              html += ` <button class="sil-btn" onclick="yorumSil('\( {doc.id}', ' \){ydoc.id}')">SİL</button>`;
             }
-            ysnap.forEach(ydoc => {
-              const y = ydoc.data();
-              html += `
-                <div class="yorum">
-                  <strong>\( {y.yazar}:</strong> \){y.yorum}
-                  <small>${new Date(y.tarih.toDate()).toLocaleString('tr-TR')}</small>`;
-              if (currentUser && currentUser.email === adminEmail) {
-                html += ` <button class="sil-btn" onclick="yorumSil('\( {doc.id}', ' \){ydoc.id}')">SİL</button>`;
-              }
-              html += `</div>`;
-            });
-            html += `</div></div>`;
-            liste.innerHTML += html;
-          }).catch(err => {
-            liste.innerHTML += "<p style='color:#aaa'>Yorum yükleme hatası.</p>";
+            html += `</div>`;
           });
-        });
-      }).catch(err => {
+
+          html += `</div></div>`;
+          liste.innerHTML += html;
+        }
+      } catch (err) {
         liste.innerHTML = "<p style='color:#aaa'>Hata: " + err.message + "</p>";
-      });
+      }
     }
   </script>
 </body>
