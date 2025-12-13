@@ -127,23 +127,24 @@
     function yorumSil(duyuruId, yorumId) {
       if (currentUser.email !== adminEmail) return;
       if (confirm("Yorumu sil?")) {
-        db.collection("duyurular").doc(duyuruId).collection("yorumlar").doc(yorumId).delete().then(() => duyurulariGetir());
+        db.collection("duyurular").doc(duyuruId).collection("yorumlar").doc(yorumId).delete().then(() => {
+          duyurulariGetir();
+        });
       }
     }
 
-    async function duyurulariGetir() {
+    function duyurulariGetir() {
       const liste = document.getElementById("duyurularListesi");
       liste.innerHTML = "<p style='color:#aaa'>Duyurular yükleniyor...</p>";
 
-      try {
-        const snapshot = await db.collection("duyurular").orderBy("tarih", "desc").get();
+      db.collection("duyurular").orderBy("tarih", "desc").get().then(snapshot => {
         liste.innerHTML = "";
         if (snapshot.empty) {
           liste.innerHTML = "<p style='color:#aaa'>Henüz duyuru yok.</p>";
           return;
         }
 
-        for (const doc of snapshot.docs) {
+        snapshot.forEach(doc => {
           const d = doc.data();
           let html = `
             <div class="duyuru">
@@ -158,28 +159,30 @@
 
               <div class="yorumlar">`;
 
-          const ysnapshot = await db.collection("duyurular").doc(doc.id).collection("yorumlar").orderBy("tarih", "desc").get();
-          if (ysnapshot.empty) {
-            html += "<p style='color:#888;margin-top:10px'>Henüz yorum yok.</p>";
-          }
-          ysnapshot.forEach(ydoc => {
-            const y = ydoc.data();
-            html += `
-              <div class="yorum">
-                <strong>\( {y.yazar}:</strong> \){y.yorum}
-                <small>${new Date(y.tarih.toDate()).toLocaleString('tr-TR')}</small>`;
-            if (currentUser && currentUser.email === adminEmail) {
-              html += ` <button class="sil-btn" onclick="yorumSil('\( {doc.id}', ' \){ydoc.id}')">SİL</button>`;
+          db.collection("duyurular").doc(doc.id).collection("yorumlar").orderBy("tarih", "desc").get().then(ysnap => {
+            if (ysnap.empty) {
+              html += "<p style='color:#888;margin-top:10px'>Henüz yorum yok.</p>";
             }
-            html += `</div>`;
+            ysnap.forEach(ydoc => {
+              const y = ydoc.data();
+              html += `
+                <div class="yorum">
+                  <strong>\( {y.yazar}:</strong> \){y.yorum}
+                  <small>${new Date(y.tarih.toDate()).toLocaleString('tr-TR')}</small>`;
+              if (currentUser && currentUser.email === adminEmail) {
+                html += ` <button class="sil-btn" onclick="yorumSil('\( {doc.id}', ' \){ydoc.id}')">SİL</button>`;
+              }
+              html += `</div>`;
+            });
+            html += `</div></div>`;
+            liste.innerHTML += html;
+          }).catch(err => {
+            liste.innerHTML += "<p style='color:#aaa'>Yorum yükleme hatası.</p>";
           });
-
-          html += `</div></div>`;
-          liste.innerHTML += html;
-        }
-      } catch (err) {
+        });
+      }).catch(err => {
         liste.innerHTML = "<p style='color:#aaa'>Hata: " + err.message + "</p>";
-      }
+      });
     }
   </script>
 </body>
