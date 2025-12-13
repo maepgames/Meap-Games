@@ -112,25 +112,28 @@
     }
 
     function yorumEkle(duyuruId) {
-      if (!currentUser) { alert("Yorum için giriş yap!"); return; }
-      const yorum = document.getElementById(`yorum-${duyuruId}`).value.trim();
+      if (!currentUser) {
+        alert("Yorum için giriş yap!");
+        return;
+      }
+      const textareaId = `yorum-${duyuruId}`;
+      const yorum = document.getElementById(textareaId).value.trim();
       if (!yorum) return;
 
-      db.ref(`duyurular/${duyuruId}/yorumlar`).push().set({
+      const newYorum = db.ref(`duyurular/${duyuruId}/yorumlar`).push();
+      newYorum.set({
         yorum,
         yazar: currentUser.email.split('@')[0],
         tarih: Date.now()
       }).then(() => {
-        document.getElementById(`yorum-${duyuruId}`).value = "";
+        document.getElementById(textareaId).value = "";
       });
     }
 
     function yorumSil(duyuruId, yorumId) {
       if (currentUser.email !== adminEmail) return;
       if (confirm("Yorumu sil?")) {
-        db.ref(`duyurular/\( {duyuruId}/yorumlar/ \){yorumId}`).remove().then(() => {
-          alert("Yorum silindi!");
-        });
+        db.ref(`duyurular/\( {duyuruId}/yorumlar/ \){yorumId}`).remove();
       }
     }
 
@@ -159,31 +162,34 @@
                 <button onclick="yorumEkle('${duyuruId}')">YORUM GÖNDER</button>
               </div>
 
-              <div class="yorumlar">`;
+              <div class="yorumlar" id="yorumlar-${duyuruId}">
+                <p style='color:#888'>Yorumlar yükleniyor...</p>
+              </div>
+            </div>`;
+          liste.innerHTML += html;
 
-          const yorumlarRef = db.ref(`duyurular/${duyuruId}/yorumlar`);
-          yorumlarRef.orderByChild("tarih").on("value", ysnap => {
-            let yorumHtml = "";
+          // Yorumları ayrı listener ile realtime yükle
+          db.ref(`duyurular/${duyuruId}/yorumlar`).orderByChild("tarih").on("value", ysnap => {
+            const yorumListe = document.getElementById(`yorumlar-${duyuruId}`);
+            yorumListe.innerHTML = "";
             if (!ysnap.exists()) {
-              yorumHtml = "<p style='color:#888;margin-top:10px'>Henüz yorum yok.</p>";
+              yorumListe.innerHTML = "<p style='color:#888;margin-top:10px'>Henüz yorum yok.</p>";
+              return;
             }
             ysnap.forEach(ydoc => {
               const y = ydoc.val();
               const yorumId = ydoc.key;
-              yorumHtml += `
+              let yHtml = `
                 <div class="yorum">
                   <strong>\( {y.yazar}:</strong> \){y.yorum}
                   <small>${new Date(y.tarih).toLocaleString('tr-TR')}</small>`;
               if (currentUser && currentUser.email === adminEmail) {
-                yorumHtml += ` <button class="sil-btn" onclick="yorumSil('\( {duyuruId}', ' \){yorumId}')">SİL</button>`;
+                yHtml += ` <button class="sil-btn" onclick="yorumSil('\( {duyuruId}', ' \){yorumId}')">SİL</button>`;
               }
-              yorumHtml += `</div>`;
+              yHtml += `</div>`;
+              yorumListe.innerHTML += yHtml;
             });
-            document.querySelector(`#duyurularListesi .duyuru:last-child .yorumlar`).innerHTML = yorumHtml;
           });
-
-          html += `</div></div>`;
-          liste.innerHTML += html;
         });
       });
     }
