@@ -6,20 +6,21 @@
   <title>MEAP GAMES - Duyurular</title>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDp2dofx_F9_p7PVaxXcjWlhxLwcRtF19o",
       authDomain: "meap-games.firebaseapp.com",
-      projectId: "meap-games",
       databaseURL: "https://meap-games-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "meap-games",
       appId: "1:1092303341508:web:9a25309386ec575569c691"
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.firestore();
+    const db = firebase.database();
   </script>
   <style>
+    /* aynı stil, kopyala yapıştır */
     *{margin:0;padding:0;box-sizing:border-box;}
     body{background:#000;color:white;font-family:Arial,sans-serif;}
     .topbar{position:fixed;top:0;left:0;right:0;background:#111;padding:15px;display:flex;justify-content:center;gap:30px;z-index:99;box-shadow:0 4px 20px rgba(255,0,0,0.5);}
@@ -88,6 +89,8 @@
       auth.signOut().then(() => location.href = "index.html");
     }
 
+    const duyurularRef = db.ref("duyurular");
+
     function duyuruEkle() {
       const baslik = document.getElementById("duyuruBaslik").value.trim();
       const icerik = document.getElementById("duyuruIcerik").value.trim();
@@ -96,17 +99,17 @@
         return;
       }
 
-      db.collection("duyurular").add({
+      const newDuyuru = duyurularRef.push();
+      newDuyuru.set({
         baslik,
         icerik,
         yazar: currentUser.email,
-        tarih: new Date()
+        tarih: Date.now()
       }).then(() => {
         alert("Duyuru gönderildi kral!");
         document.getElementById("duyuruBaslik").value = "";
         document.getElementById("duyuruIcerik").value = "";
-        duyurulariGetir();
-      }).catch(err => alert("Hata: " + err.message));
+      });
     }
 
     function yorumEkle(duyuruId) {
@@ -114,75 +117,75 @@
       const yorum = document.getElementById(`yorum-${duyuruId}`).value.trim();
       if (!yorum) return;
 
-      db.collection("duyurular").doc(duyuruId).collection("yorumlar").add({
+      db.ref("duyurular/" + duyuruId + "/yorumlar").push().set({
         yorum,
         yazar: currentUser.email.split('@')[0],
-        tarih: new Date()
+        tarih: Date.now()
       }).then(() => {
         document.getElementById(`yorum-${duyuruId}`).value = "";
-        duyurulariGetir();
-      }).catch(err => alert("Yorum hatası: " + err.message));
+      });
     }
 
     function yorumSil(duyuruId, yorumId) {
       if (currentUser.email !== adminEmail) return;
       if (confirm("Yorumu sil?")) {
-        db.collection("duyurular").doc(duyuruId).collection("yorumlar").doc(yorumId).delete().then(() => {
-          duyurulariGetir();
-        }).catch(err => alert("Silme hatası: " + err.message));
+        db.ref("duyurular/" + duyuruId + "/yorumlar/" + yorumId).remove();
       }
     }
 
-    async function duyurulariGetir() {
+    function duyurulariGetir() {
       const liste = document.getElementById("duyurularListesi");
       liste.innerHTML = "<p style='color:#aaa'>Duyurular yükleniyor...</p>";
 
-      try {
-        const snapshot = await db.collection("duyurular").orderBy("tarih", "desc").get();
+      duyurularRef.orderByChild("tarih").once("value").then(snapshot => {
         liste.innerHTML = "";
-        if (snapshot.empty) {
+        if (!snapshot.exists()) {
           liste.innerHTML = "<p style='color:#aaa'>Henüz duyuru yok.</p>";
           return;
         }
 
-        for (const doc of snapshot.docs) {
-          const d = doc.data();
+        snapshot.forEach(childSnapshot => {
+          const d = childSnapshot.val();
+          const duyuruId = childSnapshot.key;
           let html = `
             <div class="duyuru">
               <h3>${d.baslik}</h3>
               <p>${d.icerik}</p>
-              <small>${new Date(d.tarih.toDate()).toLocaleString('tr-TR')}</small>
+              <small>${new Date(d.tarih).toLocaleString('tr-TR')}</small>
 
               <div class="yorum-form">
-                <textarea id="yorum-${doc.id}" placeholder="Yorum yaz..."></textarea>
-                <button onclick="yorumEkle('${doc.id}')">YORUM GÖNDER</button>
+                <textarea id="yorum-${duyuruId}" placeholder="Yorum yaz..."></textarea>
+                <button onclick="yorumEkle('${duyuruId}')">YORUM GÖNDER</button>
               </div>
 
               <div class="yorumlar">`;
 
-          const ysnapshot = await db.collection("duyurular").doc(doc.id).collection("yorumlar").orderBy("tarih", "desc").get();
-          if (ysnapshot.empty) {
-            html += "<p style='color:#888;margin-top:10px'>Henüz yorum yok.</p>";
-          }
-          ysnapshot.forEach(ydoc => {
-            const y = ydoc.data();
-            html += `
-              <div class="yorum">
-                <strong>\( {y.yazar}:</strong> \){y.yorum}
-                <small>${new Date(y.tarih.toDate()).toLocaleString('tr-TR')}</small>`;
-            if (currentUser && currentUser.email === adminEmail) {
-              html += ` <button class="sil-btn" onclick="yorumSil('\( {doc.id}', ' \){ydoc.id}')">SİL</button>`;
+          const yorumlarRef = db.ref("duyurular/" + duyuruId + "/yorumlar");
+          yorumlarRef.orderByChild("tarih").once("value").then(ysnap => {
+            if (!ysnap.exists()) {
+              html += "<p style='color:#888;margin-top:10px'>Henüz yorum yok.</p>";
             }
-            html += `</div>`;
+            ysnap.forEach(ydoc => {
+              const y = ydoc.val();
+              const yorumId = ydoc.key;
+              html += `
+                <div class="yorum">
+                  <strong>\( {y.yazar}:</strong> \){y.yorum}
+                  <small>${new Date(y.tarih).toLocaleString('tr-TR')}</small>`;
+              if (currentUser && currentUser.email === adminEmail) {
+                html += ` <button class="sil-btn" onclick="yorumSil('\( {duyuruId}', ' \){yorumId}')">SİL</button>`;
+              }
+              html += `</div>`;
+            });
+            html += `</div></div>`;
+            liste.innerHTML += html;
           });
-
-          html += `</div></div>`;
-          liste.innerHTML += html;
-        }
-      } catch (err) {
-        liste.innerHTML = "<p style='color:#aaa'>Hata: " + err.message + "</p>";
-      }
+        });
+      });
     }
+
+    // Realtime güncelleme için listener ekle
+    duyurularRef.on("value", () => duyurulariGetir());
   </script>
 </body>
 </html>
