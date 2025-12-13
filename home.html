@@ -45,7 +45,7 @@
   <div class="topbar">
     <a href="home.html" class="active">OYUNLAR</a>
     <a href="mini-oyunlar.html">MİNİ OYUNLAR</a>
-    <a href="#">DUYURULAR</a>
+    <a href="duyurular.html">DUYURULAR</a>
     <a href="#">HESAP</a>
     <a href="#" onclick="cikisYap()">ÇIKIŞ YAP</a>
   </div>
@@ -68,21 +68,17 @@
   </div>
 
   <script>
+    const adminEmail = "maskral2525@gmail.com";
     auth.onAuthStateChanged(user => {
       if (!user) location.href = "index.html";
-      if (user && user.email === "maskral2525@gmail.com") {
+      if (user && user.email === adminEmail) {
         document.getElementById("adminPanel").style.display = "block";
       }
       oyunlariGetir();
     });
 
     function cikisYap() {
-      auth.signOut().then(() => {
-        location.href = "index.html";
-      }).catch(error => {
-        console.log("Çıkış hatası:", error);
-        location.href = "index.html"; // Hata olsa bile at
-      });
+      auth.signOut().then(() => location.href = "index.html");
     }
 
     function oyunEkle() {
@@ -105,7 +101,7 @@
         document.getElementById("oyunResim").value = "";
         document.getElementById("oyunLink").value = "";
         oyunlariGetir();
-      }).catch(error => alert("Hata: " + error.message));
+      });
     }
 
     function oyunlariGetir() {
@@ -125,8 +121,6 @@
             </div>`;
         });
         if (snapshot.empty) liste.innerHTML = "<p style='color:#aaa'>Henüz oyun eklenmemiş.</p>";
-      }).catch(error => {
-        liste.innerHTML = "<p style='color:#aaa'>Hata: " + error.message + "</p>";
       });
     }
   </script>
