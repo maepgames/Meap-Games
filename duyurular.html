@@ -28,19 +28,22 @@
     .topbar a:last-child{background:#c00;color:white;}
     .main{margin-top:80px;padding:20px;text-align:center;}
     h1{font-size:50px;margin:40px 0;text-shadow:0 0 20px #ff3333;}
-    .duyuru{background:#111;margin:20px auto;padding:20px;border-radius:15px;max-width:600px;text-align:left;box-shadow:0 5px 20px rgba(255,0,0,0.4);}
-    .duyuru h3{color:#ff3333;font-size:24px;margin-bottom:10px;}
-    .duyuru p{color:#aaa;margin:10px 0;}
-    .yorum{background:rgba(255,51,51,0.1);padding:10px;margin:10px 0;border-left:3px solid #ff3333;}
-    .yorum small{color:#888;}
+    .duyuru{background:#111;margin:30px auto;padding:25px;border-radius:15px;max-width:700px;text-align:left;box-shadow:0 5px 20px rgba(255,0,0,0.4);}
+    .duyuru h3{color:#ff3333;font-size:26px;margin-bottom:15px;}
+    .duyuru p{color:#ddd;font-size:18px;line-height:1.5;}
+    .duyuru small{color:#888;font-size:14px;}
+    .yorum{background:rgba(255,51,51,0.1);padding:15px;margin:15px 0;border-left:4px solid #ff3333;border-radius:8px;}
+    .yorum strong{color:#ff6666;}
+    .yorum small{color:#777;font-size:12px;display:block;margin-top:5px;}
     .yorum .sil-btn{background:#900;color:white;padding:5px 10px;border:none;border-radius:5px;cursor:pointer;margin-left:10px;font-size:12px;}
-    #adminPanel{display:none;margin:40px auto;padding:25px;background:#111;border:2px solid #ff3333;border-radius:15px;max-width:600px;}
-    #adminPanel input,#adminPanel textarea,#adminPanel button{margin:10px 0;width:100%;padding:12px;font-size:16px;border-radius:8px;}
-    #adminPanel textarea{height:100px;}
-    #adminPanel button{background:#ff3333;color:white;border:none;cursor:pointer;}
-    .yorum-form{background:#111;padding:15px;margin-top:20px;border-radius:10px;}
-    .yorum-form input,.yorum-form textarea{width:100%;padding:10px;margin:10px 0;border-radius:8px;background:#222;color:white;border:none;}
-    .yorum-form button{background:#ff3333;color:white;padding:10px;border:none;border-radius:8px;cursor:pointer;}
+    #adminPanel{display:none;margin:40px auto;padding:30px;background:#111;border:2px solid #ff3333;border-radius:15px;max-width:600px;}
+    #adminPanel h2{color:#ff3333;margin-bottom:20px;}
+    #adminPanel input,#adminPanel textarea,#adminPanel button{margin:10px 0;width:100%;padding:15px;font-size:16px;border-radius:8px;background:#222;color:white;border:none;}
+    #adminPanel textarea{height:120px;resize:vertical;}
+    #adminPanel button{background:#ff3333;color:white;border:none;cursor:pointer;font-weight:bold;}
+    .yorum-form{background:#111;padding:20px;margin-top:20px;border-radius:10px;}
+    .yorum-form textarea{width:100%;padding:15px;margin:10px 0;background:#222;color:white;border:none;border-radius:8px;height:100px;resize:vertical;}
+    .yorum-form button{background:#ff3333;color:white;padding:12px 25px;border:none;border-radius:8px;cursor:pointer;font-weight:bold;}
   </style>
 </head>
 <body>
@@ -56,11 +59,10 @@
   <div class="main">
     <h1>DUYURULAR</h1>
 
-    <!-- SADECE ADMİN -->
     <div id="adminPanel">
-      <h2 style="color:#ff3333;margin-bottom:20px">YENİ DUYURU EKLE</h2>
+      <h2>YENİ DUYURU EKLE</h2>
       <input type="text" id="duyuruBaslik" placeholder="Duyuru başlığı">
-      <textarea id="duyuruIcerik" placeholder="Duyuru içeriği"></textarea>
+      <textarea id="duyuruIcerik" placeholder="Duyuru içeriği yaz..."></textarea>
       <button onclick="duyuruEkle()">DUYURU GÖNDER</button>
     </div>
 
@@ -89,45 +91,49 @@
     function duyuruEkle() {
       const baslik = document.getElementById("duyuruBaslik").value.trim();
       const icerik = document.getElementById("duyuruIcerik").value.trim();
-      if (!baslik || !icerik) { alert("Başlık ve içerik doldur!"); return; }
+      if (!baslik || !icerik) {
+        alert("Başlık ve içerik doldur lan!");
+        return;
+      }
 
       db.collection("duyurular").add({
-        baslik, icerik, tarih: new Date(), yazar: currentUser.email
+        baslik,
+        icerik,
+        yazar: currentUser.email,
+        tarih: new Date()
       }).then(() => {
-        alert("Duyuru eklendi!");
+        alert("Duyuru gönderildi kral!");
         document.getElementById("duyuruBaslik").value = "";
         document.getElementById("duyuruIcerik").value = "";
         duyurulariGetir();
-      });
+      }).catch(err => alert("Hata: " + err.message));
     }
 
     function yorumEkle(duyuruId) {
-      if (!currentUser) { alert("Yorum yapmak için giriş yap!"); return; }
-      const yorumText = document.getElementById(`yorumInput-${duyuruId}`).value.trim();
-      if (!yorumText) return;
+      if (!currentUser) { alert("Yorum için giriş yap!"); return; }
+      const yorum = document.getElementById(`yorum-${duyuruId}`).value.trim();
+      if (!yorum) return;
 
       db.collection("duyurular").doc(duyuruId).collection("yorumlar").add({
-        yorum: yorumText,
+        yorum,
         yazar: currentUser.email.split('@')[0],
         tarih: new Date()
       }).then(() => {
-        document.getElementById(`yorumInput-${duyuruId}`).value = "";
+        document.getElementById(`yorum-${duyuruId}`).value = "";
         duyurulariGetir();
       });
     }
 
     function yorumSil(duyuruId, yorumId) {
       if (currentUser.email !== adminEmail) return;
-      if (confirm("Bu yorumu silmek istediğine emin misin?")) {
-        db.collection("duyurular").doc(duyuruId).collection("yorumlar").doc(yorumId).delete().then(() => {
-          duyurulariGetir();
-        });
+      if (confirm("Yorumu sil?")) {
+        db.collection("duyurular").doc(duyuruId).collection("yorumlar").doc(yorumId).delete().then(() => duyurulariGetir());
       }
     }
 
     function duyurulariGetir() {
       const liste = document.getElementById("duyurularListesi");
-      liste.innerHTML = "<p style='color:#aaa'>Yükleniyor...</p>";
+      liste.innerHTML = "<p style='color:#aaa'>Duyurular yükleniyor...</p>";
 
       db.collection("duyurular").orderBy("tarih", "desc").get().then(snapshot => {
         liste.innerHTML = "";
@@ -138,14 +144,16 @@
               <h3>${d.baslik}</h3>
               <p>${d.icerik}</p>
               <small>${new Date(d.tarih.toDate()).toLocaleString('tr-TR')}</small>
+
               <div class="yorum-form">
-                <textarea id="yorumInput-${doc.id}" placeholder="Yorum yaz..."></textarea>
+                <textarea id="yorum-${doc.id}" placeholder="Yorum yaz..."></textarea>
                 <button onclick="yorumEkle('${doc.id}')">YORUM GÖNDER</button>
               </div>
-              <div id="yorumlar-${doc.id}">`;
 
-          db.collection("duyurular").doc(doc.id).collection("yorumlar").orderBy("tarih").get().then(ysnapshot => {
-            ysnapshot.forEach(ydoc => {
+              <div class="yorumlar">`;
+
+          db.collection("duyurular").doc(doc.id).collection("yorumlar").orderBy("tarih").get().then(ysnap => {
+            ysnap.forEach(ydoc => {
               const y = ydoc.data();
               html += `
                 <div class="yorum">
@@ -161,7 +169,7 @@
           });
         });
         if (snapshot.empty) liste.innerHTML = "<p style='color:#aaa'>Henüz duyuru yok.</p>";
-      });
+      }).catch(err => liste.innerHTML = "<p style='color:#aaa'>Hata: " + err.message + "</p>");
     }
   </script>
 </body>
