@@ -137,6 +137,10 @@
 
       db.collection("duyurular").orderBy("tarih", "desc").get().then(snapshot => {
         liste.innerHTML = "";
+        if (snapshot.empty) {
+          liste.innerHTML = "<p style='color:#aaa'>Henüz duyuru yok.</p>";
+          return;
+        }
         snapshot.forEach(doc => {
           const d = doc.data();
           let html = `
@@ -152,7 +156,11 @@
 
               <div class="yorumlar">`;
 
-          db.collection("duyurular").doc(doc.id).collection("yorumlar").orderBy("tarih").get().then(ysnap => {
+          // Yorumları ayrı getir
+          db.collection("duyurular").doc(doc.id).collection("yorumlar").orderBy("tarih", "desc").get().then(ysnap => {
+            if (ysnap.empty) {
+              html += "<p style='color:#888;margin-top:10px'>Henüz yorum yok.</p>";
+            }
             ysnap.forEach(ydoc => {
               const y = ydoc.data();
               html += `
@@ -166,9 +174,8 @@
             });
             html += `</div></div>`;
             liste.innerHTML += html;
-          });
+          }).catch(err => console.log(err));
         });
-        if (snapshot.empty) liste.innerHTML = "<p style='color:#aaa'>Henüz duyuru yok.</p>";
       }).catch(err => liste.innerHTML = "<p style='color:#aaa'>Hata: " + err.message + "</p>");
     }
   </script>
